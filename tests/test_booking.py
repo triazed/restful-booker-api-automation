@@ -1,7 +1,7 @@
 import requests
 from copy import deepcopy
 from config import urls
-from test_data import auth_credentials, booking_data
+from test_data import booking_data
 
 
 class TestBooking:
