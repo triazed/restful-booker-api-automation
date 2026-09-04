@@ -1,28 +1,88 @@
 # Restful Booker API Automation
+
 API test automation project built with Python, pytest, and requests.
-The project demonstrates automated API testing, including working with REST endpoints, request/response validation, and test structuring.
+
+The project demonstrates automated REST API testing with reusable API clients,
+pytest fixtures, test data management, authentication, response validation,
+negative testing, and test data cleanup.
+
 ---
+
 ### API Under Test
-- https://restful-booker.herokuapp.com/apidoc/index.html
+
+- Restful Booker API: https://restful-booker.herokuapp.com/apidoc/index.html
+
 ---
-### Tech stack
+
+### Tech Stack
+
 - Python
-- Pytest
-- Requests
+- pytest
+- requests
+
 ---
-### Project structure
-- tests/ – test scenarios
-- test_data/ – test data
-- config/ – API endpoints
+
+### Project Structure
+
+- `clients/` – reusable API clients for authentication and booking endpoints
+- `config/` – base URL and API endpoint configuration
+- `test_data/` – reusable test payloads and credentials
+- `tests/` – API test scenarios
+- `conftest.py` – shared pytest fixtures, sessions, authentication, and test setup/cleanup
+
 ---
-### Test coverage
+
+### Test Coverage
+
 The project covers:
-- Health Check. Verify API availability (`/ping`)
-- Authentication. Create admin token (`/auth`)
-- Booking (Get booking IDs, Get booking by ID, Create booking, Update booking (PATCH), Delete booking)
+
+- **Health Check**
+  - Verify API availability (`GET /ping`)
+
+- **Authentication**
+  - Create an authentication token with valid credentials
+  - Verify authentication behavior with invalid credentials
+
+- **Booking**
+  - Get booking IDs
+  - Get booking by ID
+  - Create booking
+  - Full booking update (`PUT`)
+  - Partial booking update (`PATCH`)
+  - Delete booking
+  - Verify persisted data after update operations
+  - Validate behavior for invalid booking IDs
+  - Validate unauthorized and invalid-token requests
+  - Validate invalid and incomplete request payloads
+
 ---
-### Install dependencies
-- pip install -r requirements.txt
+
+### Known API Validation Issues
+During testing, several validation inconsistencies were identified in the API.
+
+Some booking fields accept values with unexpected data types instead of rejecting
+the request. Tests covering these known issues are marked with pytest.mark.xfail
+to document the current behavior without treating known API defects as unexpected
+test-suite failures.
+
+---
+
+### Design Notes
+* API interaction is encapsulated in reusable client classes.
+* Authenticated and unauthenticated requests use separate requests.Session instances.
+* Shared setup and authentication logic is implemented with pytest fixtures.
+* Tests create dynamic booking data where resource-specific scenarios require it.
+* Created test resources are cleaned up after execution where applicable.
+* Test data is separated from test logic.
+* Parameterization is used for equivalent negative scenarios.
+* Known API defects are explicitly documented rather than hidden from the test suite.
+
+---
+
+### Install Dependencies
+
+```bash
+pip install -r requirements.txt
 ---
 ### Run tests
 - pytest
