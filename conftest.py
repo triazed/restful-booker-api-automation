@@ -1,12 +1,11 @@
 import pytest
 import requests
 from requests import Session
-from test_data import auth_credentials
-from config import urls
 from clients.auth_client import AuthClient
 from clients.booking_client import BookingClient
 from config.urls import Urls
 from test_data.auth_credentials import AuthCredentials
+from test_data.booking_data import booking_data
 
 
 @pytest.fixture()
@@ -42,7 +41,7 @@ def auth_token(auth_client):
     assert data != {}
     assert "token" in data
     assert isinstance(data["token"], str)
-    assert data["token"] != ""
+    assert data["token"]
 
     yield data["token"]
 
@@ -58,13 +57,24 @@ def authorized_booking_client(authorized_session):
 def unauthorized_booking_client(unauthorized_session):
     return BookingClient(Urls.BASE_URL, unauthorized_session)
 
-@pytest.fixture
-def admin_token():
-    admin_credentials = auth_credentials.admin_credentials
-    response = requests.post(urls.AUTH_URL, json=admin_credentials)
-    data = response.json()
+@pytest.fixture()
+def created_booking(unauthorized_booking_client, authorized_booking_client):
+    response = unauthorized_booking_client.create_booking(booking_data)
     assert response.status_code == 200
-    assert "token" in data
-    assert isinstance(data["token"], str)
-    assert data["token"]
-    return data["token"]
+
+    data = response.json()
+    assert isinstance(data, dict)
+    assert data
+    assert "bookingid" in data
+    assert isinstance(data["bookingid"], int)
+    assert "booking" in data
+    assert isinstance(data["booking"], dict)
+    assert data["booking"]
+
+    yield {
+        "booking_id": data["bookingid"],
+        "loaded_booking_data": booking_data,
+        "created_booking_data": data["booking"]
+    }
+    authorized_booking_client.delete_booking(data["bookingid"])
+
