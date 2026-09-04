@@ -1,4 +1,6 @@
-admin_credentials = {
-    "username": "admin",
-    "password": "password123"
-}
+class AuthCredentials:
+
+    admin_credentials = {
+        "username": "admin",
+        "password": "password123"
+    }
