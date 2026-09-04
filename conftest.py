@@ -1,5 +1,4 @@
 import pytest
-import requests
 from requests import Session
 from clients.auth_client import AuthClient
 from clients.booking_client import BookingClient

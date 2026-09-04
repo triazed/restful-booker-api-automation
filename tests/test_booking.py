@@ -1,6 +1,7 @@
+from copy import deepcopy
 import pytest
 from config.urls import Urls
-from test_data.booking_data import booking_data, invalid_booking_data, full_update_booking_data, invalid_full_update_booking_data, known_validation_issues, invalid_booking_ids
+from test_data.booking_data import booking_data, invalid_booking_data, full_update_booking_data, invalid_full_update_booking_data, partial_update_booking_data, known_validation_issues, invalid_booking_ids
 
 
 class TestBooking:
@@ -93,7 +94,7 @@ class TestBooking:
         assert updated_response.status_code == 403
         assert updated_response.text == "Forbidden"
 
-    def test_update_booking_incorrect_token_returns_error(self, unauthorized_session, created_booking):
+    def test_update_booking_invalid_token_returns_error(self, unauthorized_session, created_booking):
         booking_id = created_booking["booking_id"]
 
         headers = {
@@ -125,3 +126,66 @@ class TestBooking:
         assert updated_response.status_code == 400
         assert updated_response.text == "Bad Request"
 
+    def test_partial_update_booking_updates_booking(self, authorized_booking_client, unauthorized_booking_client, created_booking):
+        booking_id = created_booking["booking_id"]
+        booking_data = created_booking["created_booking_data"]
+
+        updated_response = authorized_booking_client.partial_update_booking(booking_id, partial_update_booking_data)
+        assert updated_response.status_code == 200
+
+        updated_data = updated_response.json()
+        assert isinstance(updated_data, dict)
+        assert updated_data
+
+        expected_data = deepcopy(booking_data)
+        expected_data.update(partial_update_booking_data)
+        assert expected_data == updated_data
+
+        check_booking_response = unauthorized_booking_client.get_booking(booking_id)
+        assert check_booking_response.status_code == 200
+
+        checked_data = check_booking_response.json()
+        assert isinstance(checked_data, dict)
+        assert checked_data
+        assert checked_data == expected_data
+
+    def test_partial_update_booking_unauthorized_returns_error(self, unauthorized_booking_client, created_booking):
+        booking_id = created_booking["booking_id"]
+
+        updated_response = unauthorized_booking_client.partial_update_booking(booking_id, partial_update_booking_data)
+        assert updated_response.status_code == 403
+        assert updated_response.text == "Forbidden"
+
+    def test_partial_update_booking_invalid_token_returns_error(self, unauthorized_session, created_booking):
+        booking_id = created_booking["booking_id"]
+
+        headers = {
+            "Cookie": "token=abc"
+        }
+
+        updated_response = unauthorized_session.patch(f"{Urls.BASE_URL}{Urls.BOOKING_URL}/{booking_id}", json=partial_update_booking_data, headers=headers)
+        assert updated_response.status_code == 403
+        assert updated_response.text == "Forbidden"
+
+    @pytest.mark.parametrize("booking_id", invalid_booking_ids)
+    def test_partial_update_booking_invalid_booking_id_returns_error(self, authorized_booking_client, booking_id):
+        updated_response = authorized_booking_client.partial_update_booking(booking_id, partial_update_booking_data)
+        assert updated_response.status_code == 405
+        assert updated_response.text == "Method Not Allowed"
+
+    def test_delete_booking_deletes_created_booking(self, created_booking, authorized_booking_client, unauthorized_booking_client):
+        booking_id = created_booking["booking_id"]
+
+        response = authorized_booking_client.delete_booking(booking_id)
+        assert response.status_code == 201
+
+        check_booking_response = unauthorized_booking_client.get_booking(booking_id)
+        assert check_booking_response.status_code == 404
+        assert check_booking_response.text == "Not Found"
+
+    @pytest.mark.parametrize("invalid_booking_id", invalid_booking_ids)
+    def test_delete_booking_invalid_booking_id_returns_error(self, authorized_booking_client, invalid_booking_id):
+
+        response = authorized_booking_client.delete_booking(invalid_booking_id)
+        assert response.status_code == 405
+        assert response.text == "Method Not Allowed"
